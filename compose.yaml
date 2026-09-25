@@ -1,7 +1,71 @@
 ﻿services:
-  verticalslice.pageprocessor:
-    image: verticalslice.pageprocessor
-    build:
-      context: .
-      dockerfile: VerticalSlice.PageProcessor/Dockerfile
+  postgres:
+    image: postgres:18
+    container_name: webpageprocessor-postgres
+    
+    environment:
+      POSTGRES_DB: web_page_processor
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d web_page_processor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      
+  api:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    container_name: webpageprocessor-api
+    
+    working_dir: /src/VerticalSlice.PageProcessor
+    
+    volumes:
+      - ./:/src
+    
+    ports:
+      - "8090:8090"
+    
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http:/0.0.0.0:8090
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=web_page_processor;Username=postgres;Password=postgres
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+        
+    command: ["/bin/sh", "-c", "dotnet restore && dotnet build && dotnet run --no-build --no-launch-profile --urls http://0.0.0.0:8090"]
+      
+  pgadmin:
+    image: dpage/pgadmin4:9
+    container_name: webpageprocessor-pgadmin
 
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: "True"
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+
+
+    ports:
+      - "8080:80"
+
+    volumes:
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./docker/pgadmin/config_local.py:/pgadmin4/config_local.py:ro
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+        
+volumes:
+  postgres_data:
