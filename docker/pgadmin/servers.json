@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "PageProcessor PostgreSQL",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "web_page_processor",
+      "Username": "postgres",
+      "SSLMode": "prefer",
+      "PasswordExecCommand": "echo postgres"
+    }
+  }
+}

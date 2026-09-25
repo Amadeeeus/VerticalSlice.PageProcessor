@@ -1,0 +1,7 @@
+﻿services:
+  verticalslice.pageprocessor:
+    image: verticalslice.pageprocessor
+    build:
+      context: .
+      dockerfile: VerticalSlice.PageProcessor/Dockerfile
+
